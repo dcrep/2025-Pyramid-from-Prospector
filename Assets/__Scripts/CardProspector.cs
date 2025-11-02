@@ -24,6 +24,7 @@ public class CardProspector : Card
         // Uncomment the next line to call the base class version of this method
         // base.OnMouseUpAsButton();                                          // a
         // Call the CardClicked method on the Prospector Singleton
+        circleHighlightRenderer.enabled = true;
         Prospector.CARD_CLICKED(this);
         base.OnMouseUpAsButton();// b
     }

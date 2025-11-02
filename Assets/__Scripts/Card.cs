@@ -17,6 +17,8 @@ public class Card : MonoBehaviour
     // This List holds all of the Pip GameObjects
     public List<GameObject> pipGOs = new List<GameObject>();
 
+    public SpriteRenderer circleHighlightRenderer;
+
     /// <summary>
     /// Creates this Card’s visuals based on suit and rank.
     /// Note that this method assumes it will be passed a valid suit and rank.
@@ -46,6 +48,13 @@ public class Card : MonoBehaviour
         AddBack();
         faceUp = startFaceUp;
 
+        Transform circleTransform = transform.Find("CircleHighlight");
+        if (circleTransform != null)
+        {
+            GameObject circleHighlight = circleTransform.gameObject;
+            //Debug.Log("Found CircleHighlight on " + name);
+            circleHighlightRenderer = circleHighlight.GetComponent<SpriteRenderer>();
+        }
     }
 
     /// <summary>
