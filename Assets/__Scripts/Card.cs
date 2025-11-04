@@ -19,6 +19,8 @@ public class Card : MonoBehaviour
 
     public SpriteRenderer circleHighlightRenderer;
 
+    public int layerAsInt = 0;
+
     /// <summary>
     /// Creates this Card’s visuals based on suit and rank.
     /// Note that this method assumes it will be passed a valid suit and rank.
@@ -219,6 +221,14 @@ public class Card : MonoBehaviour
     /// <param name="layerName">The name of the layer to move to</param>
     public void SetSpriteSortingLayer(string layerName)
     {
+        if (layerName.StartsWith("Row"))
+        {
+            layerAsInt = layerName[^1] - '0';
+        }
+        else
+        {
+            layerAsInt = -1;
+        }
         PopulateSpriteRenderers();
 
         foreach (SpriteRenderer srend in spriteRenderers)

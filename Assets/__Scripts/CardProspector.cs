@@ -21,6 +21,32 @@ public class CardProspector : Card
     /// </summary>
     override public void OnMouseUpAsButton()
     {
+        //var sortLayer = GetComponent<Renderer>().sortingLayerName;
+        Debug.Log("Card clicked: " + name + " on layer " + layerAsInt);
+
+        if (layerAsInt >= 0)
+        {
+            var collider = GetComponent<BoxCollider2D>();
+            // Get overlapping colliders (note size - 1 because box collider extends slightly further than the visible card)
+            Collider2D[] overlapResults = Physics2D.OverlapBoxAll((Vector2)collider.bounds.center,
+                                                                (Vector2)collider.bounds.size - Vector2.one * 1f,
+                                                                collider.transform.eulerAngles.z);
+            List<Collider2D> overlappedColliders = new(overlapResults);
+            foreach (var col in overlappedColliders)
+            {
+                if (col != collider)
+                {
+                    // If another collider is found that is not this card's collider, do not register the click.
+                    Debug.Log("Collider overlap detected with " + col.name + " layer #: " + col.GetComponent<Card>().layerAsInt);
+                    if (layerAsInt < col.GetComponent<Card>().layerAsInt)
+                    {
+                        Debug.Log("Click ignored due to overlapping collider with higher layer.");
+                        return; // Ignore the click if this card is underneath another
+                    }
+                }
+            }
+        }
+
         // Uncomment the next line to call the base class version of this method
         // base.OnMouseUpAsButton();                                          // a
         // Call the CardClicked method on the Prospector Singleton
