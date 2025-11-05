@@ -240,11 +240,17 @@ public class Prospector : MonoBehaviour
         switch (cp.state)
         {
             case eCardState.target:
-                // Clicking the target card does nothing
+                if (S.target.rank == 13)
+                {
+                    S.MoveToDiscard(S.target);
+                    if (S.drawPile.Count > 0)
+                    {
+                        S.MoveToTarget(S.Draw());  // Draw a new target card
+                        S.UpdateDrawPile();          // Restack the drawPile
+                    }
+                }
                 break;
             case eCardState.drawpile:
-                // Clicking *any* card in the drawPile will draw the next card
-                // Call two methods on the Prospector Singleton S
                 if (S.selectedCard != null)
                 {
                     S.selectedCard.circleHighlightRenderer.enabled = false;
@@ -263,7 +269,19 @@ public class Prospector : MonoBehaviour
                 // If it’s not an adjacent rank, it’s not valid
                 //if (!cp.AdjacentTo(S.target)) validMatch = false;            // b
 
-                if (S.selectedCard == null)
+                if (cp.rank == 13)
+                {
+                    validMatch = true;
+                    if (S.selectedCard != null)
+                    {
+                        S.selectedCard.circleHighlightRenderer.enabled = false;
+                        S.selectedCard = null;
+                    }
+                    S.mine.Remove(cp);   // Remove it from the tableau List
+                    S.MoveToDiscard(cp);
+                    return;
+                }
+                else if (S.selectedCard == null)
                 {
                     if (cp.rank + S.target.rank == 13)
                     {
@@ -315,8 +333,11 @@ public class Prospector : MonoBehaviour
                         Debug.Log("Valid match with target");
                         S.mine.Remove(cp);   // Remove it from the tableau List
                         S.MoveToDiscard(cp);
-                        S.MoveToTarget(S.Draw());  // Draw a new target card
-                        S.UpdateDrawPile();          // Restack the drawPile 
+                        if (S.drawPile.Count > 0)
+                        {
+                            S.MoveToTarget(S.Draw());  // Draw a new target card
+                            S.UpdateDrawPile();          // Restack the drawPile 
+                        }
                     }
                                            
                     //S.MoveToTarget(cp);  // Make it the target card
