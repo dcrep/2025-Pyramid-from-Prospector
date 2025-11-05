@@ -21,6 +21,8 @@ public class Prospector : MonoBehaviour
     private Deck deck;
     private JsonLayout jsonLayout;
 
+    CardProspector selectedCard = null;
+
     // A Dictionary to pair mine layout IDs and actual Cards
     private Dictionary<int, CardProspector> mineIdToCardDict;                 // a
 
@@ -243,25 +245,83 @@ public class Prospector : MonoBehaviour
             case eCardState.drawpile:
                 // Clicking *any* card in the drawPile will draw the next card
                 // Call two methods on the Prospector Singleton S
+                if (S.selectedCard != null)
+                {
+                    S.selectedCard.circleHighlightRenderer.enabled = false;
+                    S.selectedCard = null;
+                }
                 S.MoveToTarget(S.Draw());  // Draw a new target card
                 S.UpdateDrawPile();          // Restack the drawPile
                 break;
             case eCardState.mine:
                 // Clicking a card in the mine will check if it’s a valid play
-                bool validMatch = true;  // Initially assume that it’s valid 
+                bool validMatch = false;  // Initially assume that it’s invalid 
 
                 // If the card is face-down, it’s not valid
-                if (!cp.faceUp) validMatch = false;
+                //if (!cp.faceUp) validMatch = false;
 
                 // If it’s not an adjacent rank, it’s not valid
-                if (!cp.AdjacentTo(S.target)) validMatch = false;            // b
+                //if (!cp.AdjacentTo(S.target)) validMatch = false;            // b
+
+                if (S.selectedCard == null)
+                {
+                    if (cp.rank + S.target.rank == 13)
+                    {
+                        validMatch = true;
+                    }
+                    else
+                    {
+                        S.selectedCard = cp;
+                        cp.circleHighlightRenderer.enabled = true;
+                    }
+                }
+                else
+                {
+                    if (S.selectedCard.rank + cp.rank == 13)
+                    {
+                        validMatch = true;
+                        S.selectedCard.circleHighlightRenderer.enabled = false;
+                        //S.selectedCard = null;
+                    }
+                    // Does the newly clicked card total up to 13 with the target card?
+                    else if (cp.rank + S.target.rank == 13)
+                    {
+                        validMatch = true;
+                        S.selectedCard.circleHighlightRenderer.enabled = false;
+                        // Invalidate previous selection and don't move it below
+                        S.selectedCard = null;
+                    }
+                    else
+                    {
+                        S.selectedCard.circleHighlightRenderer.enabled = false;
+                        S.selectedCard = cp;
+                        cp.circleHighlightRenderer.enabled = true;
+                    }
+                }
 
                 if (validMatch)
-                {        // If it’s a valid card
-                    S.mine.Remove(cp);   // Remove it from the tableau List
-                    S.MoveToTarget(cp);  // Make it the target card
+                {
+                    if (S.selectedCard != null)
+                    {
+                        S.mine.Remove(cp);   // Remove it from the tableau List
+                        S.MoveToDiscard(cp);
+                        S.mine.Remove(S.selectedCard);   // Remove it from the tableau List
+                        S.MoveToDiscard(S.selectedCard);
+                        //S.MoveToTarget(S.selectedCard);  // Make it the target card
+                        S.selectedCard = null;
+                    }
+                    else    // no selected card
+                    {
+                        Debug.Log("Valid match with target");
+                        S.mine.Remove(cp);   // Remove it from the tableau List
+                        S.MoveToDiscard(cp);
+                        S.MoveToTarget(S.Draw());  // Draw a new target card
+                        S.UpdateDrawPile();          // Restack the drawPile 
+                    }
+                                           
+                    //S.MoveToTarget(cp);  // Make it the target card
 
-                    S.SetMineFaceUps();  // Be sure to add this line!!
+                    //S.SetMineFaceUps();  // Be sure to add this line!!
                 }
                 break;
         }
