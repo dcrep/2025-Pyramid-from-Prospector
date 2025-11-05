@@ -230,16 +230,22 @@
             "hiddenByString": ""
         }
     ],
-    "drawPile": {
+    "stockPile": {
         "x": 6,
         "y": -4,
         "layer": "Draw",
         "xStagger": 0.15
     },
-    "discardPile": {
+    "wastePile": {
         "x": 0,
         "y": -4,
-        "layer": "Discard",
+        "layer": "Waste",
+        "xStagger": 0
+    },
+    "foundationPile": {
+        "x": 0,
+        "y": -4,
+        "layer": "Foundation",
         "xStagger": 0
     }
 }

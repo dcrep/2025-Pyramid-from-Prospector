@@ -10,7 +10,7 @@ public class JsonLayout
 {
     public Vector2 multiplier;
     public List<JsonLayoutSlot> slots;
-    public JsonLayoutPile drawPile, discardPile;
+    public JsonLayoutPile stockPile, wastePile, foundationPile;
 }
 
 /// <summary>
@@ -52,7 +52,7 @@ public class JsonLayoutSlot : ISerializationCallbackReceiver
 }
 
 /// <summary>
-/// Stores information for the draw and discard piles
+/// Stores information for the draw and w piles
 /// </summary>
 [System.Serializable]
 public class JsonLayoutPile

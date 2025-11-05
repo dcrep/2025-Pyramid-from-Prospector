@@ -240,7 +240,7 @@ public class Card : MonoBehaviour
     /// <summary>
     /// Sets the sortingOrder of the Sprites on this Card. This allows multiple
     /// Cards to be in the same sorting layer and still overlap properly, and
-    /// it is used by both the draw and discard piles.
+    /// it is used by both the draw and Waste piles.
     /// </summary>
     /// <param name="sOrd">The sortingOrder for the face of the Card</param>
     public void SetSortingOrder(int sOrd)

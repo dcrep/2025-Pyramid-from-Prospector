@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // This enum defines the variable type eCardState with four named values.      // a
-public enum eCardState { drawpile, mine, target, discard }
+public enum eCardState { drawpile, pyramid, target, waste }
 
 public class CardProspector : Card
 { // Make CardProspector extend Card        // b

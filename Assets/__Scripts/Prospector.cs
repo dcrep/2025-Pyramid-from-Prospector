@@ -10,10 +10,10 @@ public class Prospector : MonoBehaviour
     private static Prospector S; // A private Singleton for Prospector
 
     [Header("Dynamic")]
-    public List<CardProspector> drawPile;
+    public List<CardProspector> stockPile;
 
-    public List<CardProspector> discardPile;
-    public List<CardProspector> mine;
+    public List<CardProspector> wastePile;
+    public List<CardProspector> pyramid;
     public CardProspector target;
 
     private Transform layoutAnchor;
@@ -23,8 +23,8 @@ public class Prospector : MonoBehaviour
 
     CardProspector selectedCard = null;
 
-    // A Dictionary to pair mine layout IDs and actual Cards
-    private Dictionary<int, CardProspector> mineIdToCardDict;                 // a
+    // A Dictionary to pair pyramid layout IDs and actual Cards
+    private Dictionary<int, CardProspector> pyramidIdToCardDict;                 // a
 
 
     void Start()
@@ -40,9 +40,9 @@ public class Prospector : MonoBehaviour
         deck.InitDeck();
         Deck.Shuffle(ref deck.cards);
 
-        drawPile = ConvertCardsToCardProspectors(deck.cards);
+        stockPile = ConvertCardsToCardProspectors(deck.cards);
 
-        LayoutMine();
+        LayoutPyramid();
 
         MoveToTarget(Draw());
         UpdateDrawPile();
@@ -67,21 +67,21 @@ public class Prospector : MonoBehaviour
     }
 
     /// <summary>
-    /// Pulls a single card from the beginning of the drawPile and returns it
+    /// Pulls a single card from the beginning of the stockPile and returns it
     /// Note: There is no protection against trying to draw from an empty pile!
     /// </summary>
-    /// <returns>The top card of drawPile</returns>
+    /// <returns>The top card of stockPile</returns>
     CardProspector Draw()
     {
-        CardProspector cp = drawPile[0]; // Pull the 0th CardProspector
-        drawPile.RemoveAt(0);            // Then remove it from drawPile
+        CardProspector cp = stockPile[0]; // Pull the 0th CardProspector
+        stockPile.RemoveAt(0);            // Then remove it from stockPile
         return (cp);                      // And return it
     }
 
     /// <summary>
-    /// Positions the initial tableau of cards, a.k.a. the "mine"
+    /// Positions the initial tableau of cards, a.k.a. the "pyramid"
     /// </summary>
-    void LayoutMine()
+    void LayoutPyramid()
     {
         // Create an empty GameObject to serve as an anchor for the tableau   // a
         if (layoutAnchor == null)
@@ -93,8 +93,8 @@ public class Prospector : MonoBehaviour
 
         CardProspector cp;
 
-        // Generate the Dictionary to match mine layout ID to CardProspector
-        mineIdToCardDict = new Dictionary<int, CardProspector>();             // b
+        // Generate the Dictionary to match pyramid layout ID to CardProspector
+        pyramidIdToCardDict = new Dictionary<int, CardProspector>();             // b
 
 
         // Iterate through the JsonLayoutSlots pulled from the JSON_Layout
@@ -116,42 +116,42 @@ public class Prospector : MonoBehaviour
 
             cp.layoutID = slot.id;
             cp.layoutSlot = slot;
-            // CardProspectors in the mine have the state CardState.mine
-            cp.state = eCardState.mine;
+            // CardProspectors in the pyramid have the state CardState.pyramid
+            cp.state = eCardState.pyramid;
 
             // Set the sorting layer of all SpriteRenderers on the Card
             cp.SetSpriteSortingLayer(slot.layer);
 
-            mine.Add(cp); // Add this CardProspector to the List<mine>
+            pyramid.Add(cp); // Add this CardProspector to the List<pyramid>
 
-            // Add this CardProspector to the mineIDtoCardDict Dictionary
-            mineIdToCardDict.Add(slot.id, cp);                                // c
+            // Add this CardProspector to the pyramidIdToCardDict Dictionary
+            pyramidIdToCardDict.Add(slot.id, cp);                                // c
 
         }
     }
 
     /// <summary>
-    /// Moves the current target card to the discardPile
+    /// Moves the current target card to the wastePile
     /// </summary>
     /// <param name="cp">The CardProspector to be moved</param>
-    void MoveToDiscard(CardProspector cp)
+    void MoveToWaste(CardProspector cp)
     {
-        // Set the state of the card to discard
-        cp.state = eCardState.discard;
-        discardPile.Add(cp);  // Add it to the discardPile List<>
+        // Set the state of the card to waste
+        cp.state = eCardState.waste;
+        wastePile.Add(cp);  // Add it to the wastePile List<>
         cp.transform.SetParent(layoutAnchor); // Update its transform parent
 
-        // Position it on the discardPile
+        // Position it on the wastePile
         cp.SetLocalPos(new Vector3(
-        jsonLayout.multiplier.x * jsonLayout.discardPile.x,
-        jsonLayout.multiplier.y * jsonLayout.discardPile.y,
+        jsonLayout.multiplier.x * jsonLayout.wastePile.x,
+        jsonLayout.multiplier.y * jsonLayout.wastePile.y,
         0));
 
         cp.faceUp = true;
 
         // Place it on top of the pile for depth sorting
-        cp.SetSpriteSortingLayer(jsonLayout.discardPile.layer);               // a
-        cp.SetSortingOrder(-200 + (discardPile.Count * 3));                  // b
+        cp.SetSpriteSortingLayer(jsonLayout.wastePile.layer);               // a
+        cp.SetSortingOrder(-200 + (wastePile.Count * 3));                  // b
     }
 
     /// <summary>
@@ -160,46 +160,46 @@ public class Prospector : MonoBehaviour
     /// <param name="cp">The CardProspector to be moved</param>
     void MoveToTarget(CardProspector cp)
     {
-        // If there is currently a target card, move it to discardPile
-        if (target != null) MoveToDiscard(target);
+        // If there is currently a target card, move it to wastePile
+        if (target != null) MoveToWaste(target);
 
-        // Use MoveToDiscard to move the target card to the correct location
-        MoveToDiscard(cp);                                                    // c
+        // Use MoveToWaste to move the target card to the correct location
+        MoveToWaste(cp);                                                    // c
 
         // Then set a few additional things to make cp the new target
         target = cp; // cp is the new target
         cp.state = eCardState.target;
 
-        // Set the depth sorting so that cp is on top of the discardPile
+        // Set the depth sorting so that cp is on top of the wastePile
         cp.SetSpriteSortingLayer("Target");                                 // c
         cp.SetSortingOrder(0);
     }
 
     /// <summary>
-    /// Arranges all the cards of the drawPile to show how many are left
+    /// Arranges all the cards of the stockPile to show how many are left
     /// </summary>
     void UpdateDrawPile()
     {
         CardProspector cp;
-        // Go through all the cards of the drawPile
-        for (int i = 0; i < drawPile.Count; i++)
+        // Go through all the cards of the stockPile
+        for (int i = 0; i < stockPile.Count; i++)
         {
-            cp = drawPile[i];
+            cp = stockPile[i];
             cp.transform.SetParent(layoutAnchor);
 
-            // Position it correctly with the layout.drawPile.stagger
+            // Position it correctly with the layout.stockPile.stagger
             Vector3 cpPos = new Vector3();
-            cpPos.x = jsonLayout.multiplier.x * jsonLayout.drawPile.x;
-            // Add the staggering for the drawPile
-            cpPos.x += jsonLayout.drawPile.xStagger * i;
-            cpPos.y = jsonLayout.multiplier.y * jsonLayout.drawPile.y;
+            cpPos.x = jsonLayout.multiplier.x * jsonLayout.stockPile.x;
+            // Add the staggering for the stockPile
+            cpPos.x += jsonLayout.stockPile.xStagger * i;
+            cpPos.y = jsonLayout.multiplier.y * jsonLayout.stockPile.y;
             cpPos.z = 0.1f * i;
             cp.SetLocalPos(cpPos);
 
             cp.faceUp = false; // DrawPile Cards are all face-down
             cp.state = eCardState.drawpile;
             // Set depth sorting
-            cp.SetSpriteSortingLayer(jsonLayout.drawPile.layer);
+            cp.SetSpriteSortingLayer(jsonLayout.stockPile.layer);
             cp.SetSortingOrder(-10 * i);
         }
     }
@@ -210,16 +210,16 @@ public class Prospector : MonoBehaviour
     public void SetMineFaceUps()
     {                                            // d
         CardProspector coverCP;
-        foreach (CardProspector cp in mine)
+        foreach (CardProspector cp in pyramid)
         {
             bool faceUp = true; // Assume the card will be face-up
 
-            // Iterate through the covering cards by mine layout ID
+            // Iterate through the covering cards by pyramid layout ID
             foreach (int coverID in cp.layoutSlot.hiddenBy)
             {
-                coverCP = mineIdToCardDict[coverID];
-                // If the covering card is null or still in the mine...
-                if (coverCP == null || coverCP.state == eCardState.mine)
+                coverCP = pyramidIdToCardDict[coverID];
+                // If the covering card is null or still in the pyramid...
+                if (coverCP == null || coverCP.state == eCardState.pyramid)
                 {
                     faceUp = false; // then this card is face-down
                 }
@@ -242,11 +242,11 @@ public class Prospector : MonoBehaviour
             case eCardState.target:
                 if (S.target.rank == 13)
                 {
-                    S.MoveToDiscard(S.target);
-                    if (S.drawPile.Count > 0)
+                    S.MoveToWaste(S.target);
+                    if (S.stockPile.Count > 0)
                     {
                         S.MoveToTarget(S.Draw());  // Draw a new target card
-                        S.UpdateDrawPile();          // Restack the drawPile
+                        S.UpdateDrawPile();          // Restack the stockPile
                     }
                 }
                 break;
@@ -257,10 +257,10 @@ public class Prospector : MonoBehaviour
                     S.selectedCard = null;
                 }
                 S.MoveToTarget(S.Draw());  // Draw a new target card
-                S.UpdateDrawPile();          // Restack the drawPile
+                S.UpdateDrawPile();          // Restack the stockPile
                 break;
-            case eCardState.mine:
-                // Clicking a card in the mine will check if it’s a valid play
+            case eCardState.pyramid:
+                // Clicking a card in the pyramid will check if it’s a valid play
                 bool validMatch = false;  // Initially assume that it’s invalid 
 
                 // If the card is face-down, it’s not valid
@@ -277,8 +277,8 @@ public class Prospector : MonoBehaviour
                         S.selectedCard.circleHighlightRenderer.enabled = false;
                         S.selectedCard = null;
                     }
-                    S.mine.Remove(cp);   // Remove it from the tableau List
-                    S.MoveToDiscard(cp);
+                    S.pyramid.Remove(cp);   // Remove it from the tableau List
+                    S.MoveToWaste(cp);
                     return;
                 }
                 else if (S.selectedCard == null)
@@ -321,22 +321,22 @@ public class Prospector : MonoBehaviour
                 {
                     if (S.selectedCard != null)
                     {
-                        S.mine.Remove(cp);   // Remove it from the tableau List
-                        S.MoveToDiscard(cp);
-                        S.mine.Remove(S.selectedCard);   // Remove it from the tableau List
-                        S.MoveToDiscard(S.selectedCard);
+                        S.pyramid.Remove(cp);   // Remove it from the tableau List
+                        S.MoveToWaste(cp);
+                        S.pyramid.Remove(S.selectedCard);   // Remove it from the tableau List
+                        S.MoveToWaste(S.selectedCard);
                         //S.MoveToTarget(S.selectedCard);  // Make it the target card
                         S.selectedCard = null;
                     }
                     else    // no selected card
                     {
                         Debug.Log("Valid match with target");
-                        S.mine.Remove(cp);   // Remove it from the tableau List
-                        S.MoveToDiscard(cp);
-                        if (S.drawPile.Count > 0)
+                        S.pyramid.Remove(cp);   // Remove it from the tableau List
+                        S.MoveToWaste(cp);
+                        if (S.stockPile.Count > 0)
                         {
                             S.MoveToTarget(S.Draw());  // Draw a new target card
-                            S.UpdateDrawPile();          // Restack the drawPile 
+                            S.UpdateDrawPile();          // Restack the stockPile 
                         }
                     }
                                            
