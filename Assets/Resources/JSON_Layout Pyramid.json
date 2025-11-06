@@ -243,9 +243,9 @@
         "xStagger": 0
     },
     "foundationPile": {
-        "x": 0,
+        "x": -6,
         "y": -4,
         "layer": "Foundation",
-        "xStagger": 0
+        "xStagger": 0.15
     }
 }

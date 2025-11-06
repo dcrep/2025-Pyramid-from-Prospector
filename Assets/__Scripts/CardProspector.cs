@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // This enum defines the variable type eCardState with four named values.      // a
-public enum eCardState { drawpile, pyramid, target, waste }
+public enum eCardState { drawpile, pyramid, target, waste, foundation }
 
 public class CardProspector : Card
 { // Make CardProspector extend Card        // b
@@ -23,7 +23,8 @@ public class CardProspector : Card
     {
         //var sortLayer = GetComponent<Renderer>().sortingLayerName;
         Debug.Log("Card clicked: " + name + " on layer " + layerAsInt);
-
+        
+        // Negative layers are not in the pyramid
         if (layerAsInt >= 0)
         {
             var collider = GetComponent<BoxCollider2D>();

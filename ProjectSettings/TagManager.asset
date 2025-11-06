@@ -62,14 +62,17 @@ TagManager:
   - name: Row6
     uniqueID: 1004420391
     locked: 0
-  - name: Discard
+  - name: Waste
     uniqueID: 2346905583
     locked: 0
   - name: Draw
     uniqueID: 4206957673
     locked: 0
-  - name: Target
+  - name: Foundation
     uniqueID: 3073862559
+    locked: 0
+  - name: Target
+    uniqueID: 325486575
     locked: 0
   m_RenderingLayers:
   - Default

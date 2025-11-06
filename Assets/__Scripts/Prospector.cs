@@ -14,6 +14,8 @@ public class Prospector : MonoBehaviour
 
     public List<CardProspector> wastePile;
     public List<CardProspector> pyramid;
+
+    public List<CardProspector> foundationPile;
     public CardProspector target;
 
     private Transform layoutAnchor;
@@ -138,7 +140,10 @@ public class Prospector : MonoBehaviour
     {
         // Set the state of the card to waste
         cp.state = eCardState.waste;
-        wastePile.Add(cp);  // Add it to the wastePile List<>
+
+        // add to wastePile if not already there
+        if (target != cp) wastePile.Add(cp);  // Add it to the wastePile List<>
+        
         cp.transform.SetParent(layoutAnchor); // Update its transform parent
 
         // Position it on the wastePile
@@ -154,6 +159,85 @@ public class Prospector : MonoBehaviour
         cp.SetSortingOrder(-200 + (wastePile.Count * 3));                  // b
     }
 
+    void MoveToFoundation(CardProspector cp)
+    {
+        // Set the state of the card to foundation
+        cp.state = eCardState.foundation;
+        foundationPile.Add(cp);  // Add it to the foundationPile List<>
+        cp.transform.SetParent(layoutAnchor, false); // Update its transform parent
+
+        // Position it on the foundationPile
+        cp.SetLocalPos(new Vector3(
+        jsonLayout.multiplier.x * jsonLayout.foundationPile.x,
+        jsonLayout.multiplier.y * jsonLayout.foundationPile.y,
+        0));
+
+        Debug.Log("Moving to foundation: " + cp.name + "coords: " +
+            (jsonLayout.multiplier.x * jsonLayout.foundationPile.x) + ", " +
+            (jsonLayout.multiplier.y * jsonLayout.foundationPile.y));
+
+        cp.faceUp = true;
+
+        // Place it on top of the pile for depth sorting
+        cp.SetSpriteSortingLayer(jsonLayout.foundationPile.layer);               // a
+        cp.SetSortingOrder(-200 + (foundationPile.Count * 3));                  // b
+    }
+
+    void MoveTwoToFoundation(CardProspector cp1, CardProspector cp2)
+    {
+        if (S.selectedCard == cp1 || S.selectedCard == cp2)
+        {
+            S.selectedCard.circleHighlightRenderer.enabled = false;
+            S.selectedCard = null;
+        }
+        //bool targetMoved = false;
+        if (S.target == cp1)
+        {
+            S.pyramid.Remove(cp2);
+            MoveToFoundation(cp2);
+            // Must be last in order
+            MoveTargetToFoundation();
+            //targetMoved = true;
+        }
+        else if (S.target == cp2)
+        {
+            S.pyramid.Remove(cp1);
+            MoveToFoundation(cp1);
+            // Must be last in order
+            MoveTargetToFoundation();
+            //targetMoved = true;
+        }
+        else
+        {
+            S.pyramid.Remove(cp1);
+            MoveToFoundation(cp1);
+            S.pyramid.Remove(cp2);
+            MoveToFoundation(cp2);
+        }
+    }
+
+    public static void MoveTargetToFoundation()
+    {
+        if (S.target == null) return;
+        S.wastePile.Remove(S.target);
+        S.MoveToFoundation(S.target);
+
+        if (S.wastePile.Count == 0)
+        {
+            S.target = null;
+            if (S.stockPile.Count > 0)
+            {
+                S.MoveToTarget(S.Draw());  // Draw a new target card
+                S.UpdateDrawPile();          // Restack the stockPile
+            }
+        }
+        else
+        {
+            S.target = S.wastePile[^1];
+            S.target.state = eCardState.target;
+        }
+    }
+
     /// <summary>
     /// Make cp the new target card
     /// </summary>
@@ -161,6 +245,7 @@ public class Prospector : MonoBehaviour
     void MoveToTarget(CardProspector cp)
     {
         // If there is currently a target card, move it to wastePile
+        // !! already there - adjusted routine to detect for this
         if (target != null) MoveToWaste(target);
 
         // Use MoveToWaste to move the target card to the correct location
@@ -173,6 +258,25 @@ public class Prospector : MonoBehaviour
         // Set the depth sorting so that cp is on top of the wastePile
         cp.SetSpriteSortingLayer("Target");                                 // c
         cp.SetSortingOrder(0);
+    }
+
+    static public void MoveWasteToStock()
+    {
+        CardProspector cp;
+        S.target = null;
+        if (S.selectedCard != null)
+        {
+            S.selectedCard.circleHighlightRenderer.enabled = false;
+            S.selectedCard = null;
+        }
+        while (S.wastePile.Count > 0)
+        {
+            cp = S.wastePile[^1];
+            S.wastePile.RemoveAt(S.wastePile.Count - 1);
+            S.stockPile.Insert(0, cp);
+        }
+        S.MoveToTarget(S.Draw());  // Draw a new target card
+        S.UpdateDrawPile();          // Restack the stockPile
     }
 
     /// <summary>
@@ -242,12 +346,12 @@ public class Prospector : MonoBehaviour
             case eCardState.target:
                 if (S.target.rank == 13)
                 {
-                    S.MoveToWaste(S.target);
-                    if (S.stockPile.Count > 0)
-                    {
-                        S.MoveToTarget(S.Draw());  // Draw a new target card
-                        S.UpdateDrawPile();          // Restack the stockPile
-                    }
+                    MoveTargetToFoundation();
+                }
+                else if (S.stockPile.Count == 0 && S.wastePile.Count > 1)
+                {
+                    MoveWasteToStock();
+                    return;
                 }
                 break;
             case eCardState.drawpile:
@@ -256,6 +360,7 @@ public class Prospector : MonoBehaviour
                     S.selectedCard.circleHighlightRenderer.enabled = false;
                     S.selectedCard = null;
                 }
+                // Draw a new card, update draw pile
                 S.MoveToTarget(S.Draw());  // Draw a new target card
                 S.UpdateDrawPile();          // Restack the stockPile
                 break;
@@ -269,75 +374,86 @@ public class Prospector : MonoBehaviour
                 // If it’s not an adjacent rank, it’s not valid
                 //if (!cp.AdjacentTo(S.target)) validMatch = false;            // b
 
+                // king (13 rank) selected? - remove instantly
                 if (cp.rank == 13)
                 {
-                    validMatch = true;
+                    // previous selection exists? - deselect it
                     if (S.selectedCard != null)
                     {
                         S.selectedCard.circleHighlightRenderer.enabled = false;
                         S.selectedCard = null;
                     }
-                    S.pyramid.Remove(cp);   // Remove it from the tableau List
-                    S.MoveToWaste(cp);
+                    // Remove from pyramid and move to foundation
+                    S.pyramid.Remove(cp);
+                    S.MoveToFoundation(cp);
+                    //validMatch = true;    // unnecessary - returning immediately
                     return;
                 }
+                // Is this 1st pyramid selection?
                 else if (S.selectedCard == null)
                 {
+                    // Selected card + target = 13?
                     if (cp.rank + S.target.rank == 13)
                     {
                         validMatch = true;
                     }
-                    else
+                    else    // just select otherwise
                     {
                         S.selectedCard = cp;
                         cp.circleHighlightRenderer.enabled = true;
+                        //validMatch = false;   // already false - could just return
                     }
                 }
-                else
+                else    // previous pyramid selection exists
                 {
+                    // Newly clicked card + previous selected = 13
                     if (S.selectedCard.rank + cp.rank == 13)
                     {
                         validMatch = true;
-                        S.selectedCard.circleHighlightRenderer.enabled = false;
+                        //S.selectedCard.circleHighlightRenderer.enabled = false;
                         //S.selectedCard = null;
                     }
-                    // Does the newly clicked card total up to 13 with the target card?
+                    // Newly clicked card + target = 13
                     else if (cp.rank + S.target.rank == 13)
                     {
                         validMatch = true;
-                        S.selectedCard.circleHighlightRenderer.enabled = false;
+                        //S.selectedCard.circleHighlightRenderer.enabled = false;
                         // Invalidate previous selection and don't move it below
-                        S.selectedCard = null;
+                        //S.selectedCard = null;
                     }
-                    else
+                    else    // No total 13 combinations - just change selection
                     {
                         S.selectedCard.circleHighlightRenderer.enabled = false;
                         S.selectedCard = cp;
                         cp.circleHighlightRenderer.enabled = true;
+                        //validMatch = false;   // already false - could just return
                     }
                 }
-
+                // King/13 case already handled, other combination possible
                 if (validMatch)
                 {
+                    // Selected card + target/cp = 13
                     if (S.selectedCard != null)
                     {
-                        S.pyramid.Remove(cp);   // Remove it from the tableau List
-                        S.MoveToWaste(cp);
+                        /*S.pyramid.Remove(cp);   // Remove it from the tableau List
+                        S.MoveToFoundation(cp);
                         S.pyramid.Remove(S.selectedCard);   // Remove it from the tableau List
                         S.MoveToWaste(S.selectedCard);
                         //S.MoveToTarget(S.selectedCard);  // Make it the target card
-                        S.selectedCard = null;
+                        S.selectedCard = null;*/
+                        S.MoveTwoToFoundation(cp, S.selectedCard);
                     }
-                    else    // no selected card
+                    else    // clicked card + target = 13
                     {
                         Debug.Log("Valid match with target");
-                        S.pyramid.Remove(cp);   // Remove it from the tableau List
+                        /*S.pyramid.Remove(cp);   // Remove it from the tableau List
                         S.MoveToWaste(cp);
                         if (S.stockPile.Count > 0)
                         {
                             S.MoveToTarget(S.Draw());  // Draw a new target card
                             S.UpdateDrawPile();          // Restack the stockPile 
-                        }
+                        }*/
+                        S.MoveTwoToFoundation(cp, S.target);
                     }
                                            
                     //S.MoveToTarget(cp);  // Make it the target card

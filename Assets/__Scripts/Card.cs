@@ -229,6 +229,7 @@ public class Card : MonoBehaviour
         {
             layerAsInt = -1;
         }
+        //Debug.Log("Setting sorting layer of " + name + " to " + layerName + " (layer #" + layerAsInt + ")");
         PopulateSpriteRenderers();
 
         foreach (SpriteRenderer srend in spriteRenderers)
