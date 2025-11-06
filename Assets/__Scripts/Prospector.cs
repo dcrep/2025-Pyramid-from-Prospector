@@ -185,7 +185,13 @@ public class Prospector : MonoBehaviour
 
     void MoveTwoToFoundation(CardProspector cp1, CardProspector cp2)
     {
-        if (S.selectedCard == cp1 || S.selectedCard == cp2)
+        /*if (S.selectedCard == cp1 || S.selectedCard == cp2)
+        {
+            S.selectedCard.circleHighlightRenderer.enabled = false;
+            S.selectedCard = null;
+        }*/
+        // always deselect
+        if (S.selectedCard != null)
         {
             S.selectedCard.circleHighlightRenderer.enabled = false;
             S.selectedCard = null;
@@ -395,7 +401,9 @@ public class Prospector : MonoBehaviour
                     // Selected card + target = 13?
                     if (cp.rank + S.target.rank == 13)
                     {
-                        validMatch = true;
+                        //validMatch = true;
+                        S.MoveTwoToFoundation(cp, S.target);
+                        return;
                     }
                     else    // just select otherwise
                     {
@@ -409,14 +417,18 @@ public class Prospector : MonoBehaviour
                     // Newly clicked card + previous selected = 13
                     if (S.selectedCard.rank + cp.rank == 13)
                     {
-                        validMatch = true;
+                        //validMatch = true;
+                        S.MoveTwoToFoundation(cp, S.selectedCard);
+                        return;
                         //S.selectedCard.circleHighlightRenderer.enabled = false;
                         //S.selectedCard = null;
                     }
                     // Newly clicked card + target = 13
                     else if (cp.rank + S.target.rank == 13)
                     {
-                        validMatch = true;
+                        //validMatch = true;
+                        S.MoveTwoToFoundation(cp, S.target);
+                        return;
                         //S.selectedCard.circleHighlightRenderer.enabled = false;
                         // Invalidate previous selection and don't move it below
                         //S.selectedCard = null;
@@ -432,6 +444,7 @@ public class Prospector : MonoBehaviour
                 // King/13 case already handled, other combination possible
                 if (validMatch)
                 {
+                    Debug.LogError("Should not get here!");
                     // Selected card + target/cp = 13
                     if (S.selectedCard != null)
                     {
